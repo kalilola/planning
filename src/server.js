@@ -12,7 +12,7 @@ const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
 const SUIVI_TACHES_DB = '210b8c920bd2801bac30d7c6fc55d802';
 const SOUS_TACHES_DB  = '2acb8c920bd2802bba52c6525a3e251c';
-const PLANNING_DB     = '20fedb5f2de84970a8d8bc6afd3007b6';
+const PLANNING_DB = '37ab8c920bd28083865acb4fe899a3ca';
 
 // ─── GET /api/taches-a-planifier ──────────────────────────────────────────────
 // Retourne les tâches parentes cochées "A planifier"
