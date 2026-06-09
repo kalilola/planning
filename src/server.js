@@ -48,6 +48,14 @@ app.get('/api/taches-a-planifier', async (req, res) => {
   }
 });
 
+// ─── Helper : extrait l'icône d'une page Notion ───────────────────────────────
+function extractIcon(page) {
+  if (!page.icon) return null;
+  if (page.icon.type === 'emoji') return { type: 'emoji', emoji: page.icon.emoji };
+  if (page.icon.type === 'external') return { type: 'external', external: { url: page.icon.external.url } };
+  return null;
+}
+
 // ─── GET /api/taches/:id/sous-taches ──────────────────────────────────────────
 app.get('/api/taches/:id/sous-taches', async (req, res) => {
   const { id } = req.params;
@@ -64,6 +72,7 @@ app.get('/api/taches/:id/sous-taches', async (req, res) => {
       id: page.id,
       nom: page.properties['Nom de la tâche']?.title?.[0]?.plain_text || '(sans nom)',
       etat: page.properties['État']?.status?.name || '',
+      icon: extractIcon(page),
       source: 'suivi'
     }));
 
@@ -79,6 +88,7 @@ app.get('/api/taches/:id/sous-taches', async (req, res) => {
       id: page.id,
       nom: page.properties['Nom']?.title?.[0]?.plain_text || '(sans nom)',
       etat: page.properties['État']?.status?.name || '',
+      icon: extractIcon(page),
       source: 'sous_taches'
     }));
 
@@ -102,12 +112,14 @@ app.post('/api/planifier', async (req, res) => {
 
   try {
     const tachePage = await notion.pages.retrieve({ page_id: tacheId });
-    const nomTache = tachePage.properties['Nom de la tâche']?.title?.[0]?.plain_text || 'Tâche';
+    const nomTache  = tachePage.properties['Nom de la tâche']?.title?.[0]?.plain_text || 'Tâche';
+    const iconTache = extractIcon(tachePage);
 
     const creees = [];
 
     const pageCreee = await notion.pages.create({
       parent: { database_id: PLANNING_DB },
+      ...(iconTache ? { icon: iconTache } : {}),
       properties: {
         'Nom':           { title: [{ text: { content: nomTache } }] },
         'Tache liee':    { relation: [{ id: tacheId }] },
@@ -126,13 +138,14 @@ app.post('/api/planifier', async (req, res) => {
 
       const stCreee = await notion.pages.create({
         parent: { database_id: PLANNING_DB },
+        ...(st.icon ? { icon: st.icon } : {}),
         properties: {
-          'Nom':                  { title: [{ text: { content: st.nom } }] },
+          'Nom':                   { title: [{ text: { content: st.nom } }] },
           ...propST,
           'Tache parent planning': { relation: [{ id: pageCreee.id }] },
-          'Creneau debut':        { date: { start: debutISO } },
-          'Creneau fin':          { date: { start: finISO } },
-          'Etat':                 { select: { name: 'Planifié' } }
+          'Creneau debut':         { date: { start: debutISO } },
+          'Creneau fin':           { date: { start: finISO } },
+          'Etat':                  { select: { name: 'Planifié' } }
         }
       });
       creees.push({ nom: st.nom, id: stCreee.id });
