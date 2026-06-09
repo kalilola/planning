@@ -6,6 +6,14 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Headers pour autoriser l'embed dans Notion
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
+  res.setHeader('Content-Security-Policy', "frame-ancestors *");
+  next();
+});
+
 app.use(express.static(path.join(__dirname, '../public')));
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
