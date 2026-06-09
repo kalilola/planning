@@ -127,11 +127,12 @@ app.post('/api/planifier', async (req, res) => {
       const stCreee = await notion.pages.create({
         parent: { database_id: PLANNING_DB },
         properties: {
-          'Nom':           { title: [{ text: { content: `↳ ${st.nom}` } }] },
+          'Nom':                  { title: [{ text: { content: st.nom } }] },
           ...propST,
-          'Creneau debut': { date: { start: debutISO } },
-          'Creneau fin':   { date: { start: finISO } },
-          'Etat':          { select: { name: 'Planifié' } }
+          'Tache parent planning': { relation: [{ id: pageCreee.id }] },
+          'Creneau debut':        { date: { start: debutISO } },
+          'Creneau fin':          { date: { start: finISO } },
+          'Etat':                 { select: { name: 'Planifié' } }
         }
       });
       creees.push({ nom: st.nom, id: stCreee.id });
