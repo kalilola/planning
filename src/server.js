@@ -12,25 +12,17 @@ const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
 const SUIVI_TACHES_DB = '210b8c920bd2801bac30d7c6fc55d802';
 const SOUS_TACHES_DB  = '2acb8c920bd2802bba52c6525a3e251c';
-const PLANNING_DB = '37ab8c920bd28083865acb4fe899a3ca';
+const PLANNING_DB     = '37ab8c920bd28083865acb4fe899a3ca';
 
 // ─── GET /api/taches-a-planifier ──────────────────────────────────────────────
-// Retourne les tâches parentes cochées "A planifier"
+// Retourne TOUTES les tâches cochées "A planifier" (sans filtre tâche parent)
 app.get('/api/taches-a-planifier', async (req, res) => {
   try {
     const response = await notion.databases.query({
       database_id: SUIVI_TACHES_DB,
       filter: {
-        and: [
-          {
-            property: 'A planifier',
-            checkbox: { equals: true }
-          },
-          {
-            property: 'tâche parent',
-            relation: { is_empty: true }
-          }
-        ]
+        property: 'A planifier',
+        checkbox: { equals: true }
       },
       sorts: [{ property: 'Nom de la tâche', direction: 'ascending' }]
     });
@@ -52,7 +44,6 @@ app.get('/api/taches-a-planifier', async (req, res) => {
 app.get('/api/taches/:id/sous-taches', async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Sous-tâches dans Suivi des tâches (auto-relation)
     const suiviRes = await notion.databases.query({
       database_id: SUIVI_TACHES_DB,
       filter: {
@@ -68,7 +59,6 @@ app.get('/api/taches/:id/sous-taches', async (req, res) => {
       source: 'suivi'
     }));
 
-    // 2. Sous-tâches dans la base "sous taches"
     const stRes = await notion.databases.query({
       database_id: SOUS_TACHES_DB,
       filter: {
@@ -108,40 +98,38 @@ app.post('/api/planifier', async (req, res) => {
 
     const creees = [];
 
-    // Entrée principale
     const pageCreee = await notion.pages.create({
       parent: { database_id: PLANNING_DB },
       properties: {
-        'Nom':          { title: [{ text: { content: nomTache } }] },
-        'Tache liee':   { relation: [{ id: tacheId }] },
-        'Creneau debut':{ date: { start: debutISO } },
-        'Creneau fin':  { date: { start: finISO } },
-        'État':         { select: { name: 'Planifié' } },
+        'Nom':           { title: [{ text: { content: nomTache } }] },
+        'Tache liee':    { relation: [{ id: tacheId }] },
+        'Creneau debut': { date: { start: debutISO } },
+        'Creneau fin':   { date: { start: finISO } },
+        'Etat':          { select: { name: 'Planifié' } },
         ...(notes ? { 'Notes': { rich_text: [{ text: { content: notes } }] } } : {})
       }
     });
     creees.push({ nom: nomTache, id: pageCreee.id });
 
-    // Sous-tâches sélectionnées
     for (const st of (sousTaches || [])) {
       const propST = st.source === 'suivi'
-        ? { 'Tache liee':      { relation: [{ id: st.id }] } }
-        : { 'Sous-tache liee': { relation: [{ id: st.id }] } };
+        ? { 'Tache liee':       { relation: [{ id: st.id }] } }
+        : { 'Sous-tache liee':  { relation: [{ id: st.id }] } };
 
       const stCreee = await notion.pages.create({
         parent: { database_id: PLANNING_DB },
         properties: {
-          'Nom':          { title: [{ text: { content: `↳ ${st.nom}` } }] },
+          'Nom':           { title: [{ text: { content: `↳ ${st.nom}` } }] },
           ...propST,
-          'Creneau debut':{ date: { start: debutISO } },
-          'Creneau fin':  { date: { start: finISO } },
-          'État':         { select: { name: 'Planifié' } }
+          'Creneau debut': { date: { start: debutISO } },
+          'Creneau fin':   { date: { start: finISO } },
+          'Etat':          { select: { name: 'Planifié' } }
         }
       });
       creees.push({ nom: st.nom, id: stCreee.id });
     }
 
-    // Décoche "A planifier" sur la tâche
+    // Décoche "A planifier"
     await notion.pages.update({
       page_id: tacheId,
       properties: { 'A planifier': { checkbox: false } }
