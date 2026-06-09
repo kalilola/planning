@@ -35,9 +35,15 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
       line-height: 1.5;
-      min-height: 100vh;
-      padding: 20px 16px 32px;
+      padding: 20px 16px 24px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar { display: none; }
 
     /* ── Header ────────────────────────────────────────────────────── */
     .header {
