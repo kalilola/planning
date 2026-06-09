@@ -273,7 +273,16 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-2) transparent;
+      padding-right: 2px;
     }
+
+    .st-list::-webkit-scrollbar { width: 4px; }
+    .st-list::-webkit-scrollbar-track { background: transparent; }
+    .st-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
 
     .st-item {
       display: flex;
@@ -570,11 +579,18 @@
   }
 
   function selectTache(id, card) {
+    // Désélection si déjà actif
+    if (selectedTacheId === id) {
+      card.classList.remove('active');
+      selectedTacheId = null;
+      selectedST.clear();
+      document.querySelectorAll('.st-item').forEach(i => i.classList.remove('selected'));
+      return;
+    }
     document.querySelectorAll('.tache-card').forEach(c => c.classList.remove('active'));
     card.classList.add('active');
     selectedTacheId = id;
     selectedST.clear();
-    // reset checkboxes visuels des autres panels
     document.querySelectorAll('.st-item').forEach(i => i.classList.remove('selected'));
     if (!sousTachesMap[id]) chargerSousTaches(id);
   }
