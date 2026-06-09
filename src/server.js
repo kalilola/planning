@@ -10,28 +10,25 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
-// IDs des bases de données
 const SUIVI_TACHES_DB = '210b8c920bd2801bac30d7c6fc55d802';
 const SOUS_TACHES_DB  = '2acb8c920bd2802bba52c6525a3e251c';
 const PLANNING_DB     = '20fedb5f2de84970a8d8bc6afd3007b6';
 
-// ─── GET /api/taches ───────────────────────────────────────────────────────────
-// Retourne toutes les tâches parentes (sans tâche parent = tâches racines)
-app.get('/api/taches', async (req, res) => {
+// ─── GET /api/taches-a-planifier ──────────────────────────────────────────────
+// Retourne les tâches parentes cochées "A planifier"
+app.get('/api/taches-a-planifier', async (req, res) => {
   try {
     const response = await notion.databases.query({
       database_id: SUIVI_TACHES_DB,
       filter: {
         and: [
           {
-            property: 'tâche parent',
-            relation: { is_empty: true }
+            property: 'A planifier',
+            checkbox: { equals: true }
           },
           {
-            property: 'État',
-            status: {
-              does_not_equal: 'hide'
-            }
+            property: 'tâche parent',
+            relation: { is_empty: true }
           }
         ]
       },
@@ -42,23 +39,20 @@ app.get('/api/taches', async (req, res) => {
       id: page.id,
       nom: page.properties['Nom de la tâche']?.title?.[0]?.plain_text || '(sans nom)',
       etat: page.properties['État']?.status?.name || '',
-      url: page.url
     }));
 
     res.json(taches);
   } catch (err) {
-    console.error('Erreur /api/taches:', err.message);
+    console.error('Erreur /api/taches-a-planifier:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ─── GET /api/taches/:id/sous-taches ──────────────────────────────────────────
-// Retourne les sous-tâches d'une tâche (depuis Suivi des tâches via tâche parent)
-// ET les sous-tâches de la base "sous taches" via sous tache parent
 app.get('/api/taches/:id/sous-taches', async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Sous-tâches dans Suivi des tâches (auto-relation tâche parent)
+    // 1. Sous-tâches dans Suivi des tâches (auto-relation)
     const suiviRes = await notion.databases.query({
       database_id: SUIVI_TACHES_DB,
       filter: {
@@ -74,7 +68,7 @@ app.get('/api/taches/:id/sous-taches', async (req, res) => {
       source: 'suivi'
     }));
 
-    // 2. Sous-tâches dans la base "sous taches" (relation sous tache parent)
+    // 2. Sous-tâches dans la base "sous taches"
     const stRes = await notion.databases.query({
       database_id: SOUS_TACHES_DB,
       filter: {
@@ -98,81 +92,60 @@ app.get('/api/taches/:id/sous-taches', async (req, res) => {
 });
 
 // ─── POST /api/planifier ───────────────────────────────────────────────────────
-// Crée les entrées dans la base Planning
-// Body: { tacheId, sousTaches: [{id, source}], date, heureDebut, heureFin, notes }
 app.post('/api/planifier', async (req, res) => {
   const { tacheId, sousTaches, date, heureDebut, heureFin, notes } = req.body;
 
   if (!tacheId || !date || !heureDebut || !heureFin) {
-    return res.status(400).json({ error: 'Champs manquants: tacheId, date, heureDebut, heureFin requis' });
+    return res.status(400).json({ error: 'Champs manquants' });
   }
 
   const debutISO = `${date}T${heureDebut}:00.000+02:00`;
   const finISO   = `${date}T${heureFin}:00.000+02:00`;
 
   try {
-    // Récupère le nom de la tâche principale
     const tachePage = await notion.pages.retrieve({ page_id: tacheId });
     const nomTache = tachePage.properties['Nom de la tâche']?.title?.[0]?.plain_text || 'Tâche';
 
     const creees = [];
 
-    // Entrée principale pour la tâche
-    const entreeBase = {
+    // Entrée principale
+    const pageCreee = await notion.pages.create({
       parent: { database_id: PLANNING_DB },
       properties: {
-        'Nom': {
-          title: [{ text: { content: nomTache } }]
-        },
-        'Tache liee': {
-          relation: [{ id: tacheId }]
-        },
-        'Creneau debut': {
-          date: { start: debutISO }
-        },
-        'Creneau fin': {
-          date: { start: finISO }
-        },
-        'État': {
-          select: { name: 'Planifié' }
-        },
+        'Nom':          { title: [{ text: { content: nomTache } }] },
+        'Tache liee':   { relation: [{ id: tacheId }] },
+        'Creneau debut':{ date: { start: debutISO } },
+        'Creneau fin':  { date: { start: finISO } },
+        'État':         { select: { name: 'Planifié' } },
         ...(notes ? { 'Notes': { rich_text: [{ text: { content: notes } }] } } : {})
       }
-    };
-
-    const pageCreee = await notion.pages.create(entreeBase);
+    });
     creees.push({ nom: nomTache, id: pageCreee.id });
 
-    // Entrées pour chaque sous-tâche sélectionnée
+    // Sous-tâches sélectionnées
     for (const st of (sousTaches || [])) {
-      let nomST = st.nom || 'Sous-tâche';
-
-      const propSousTache = st.source === 'suivi'
+      const propST = st.source === 'suivi'
         ? { 'Tache liee':      { relation: [{ id: st.id }] } }
         : { 'Sous-tache liee': { relation: [{ id: st.id }] } };
 
-      const entreeST = {
+      const stCreee = await notion.pages.create({
         parent: { database_id: PLANNING_DB },
         properties: {
-          'Nom': {
-            title: [{ text: { content: `↳ ${nomST}` } }]
-          },
-          ...propSousTache,
-          'Creneau debut': {
-            date: { start: debutISO }
-          },
-          'Creneau fin': {
-            date: { start: finISO }
-          },
-          'État': {
-            select: { name: 'Planifié' }
-          }
+          'Nom':          { title: [{ text: { content: `↳ ${st.nom}` } }] },
+          ...propST,
+          'Creneau debut':{ date: { start: debutISO } },
+          'Creneau fin':  { date: { start: finISO } },
+          'État':         { select: { name: 'Planifié' } }
         }
-      };
-
-      const stCreee = await notion.pages.create(entreeST);
-      creees.push({ nom: nomST, id: stCreee.id });
+      });
+      creees.push({ nom: st.nom, id: stCreee.id });
     }
+
+    // Décoche "A planifier" sur la tâche
+    await notion.pages.update({
+      page_id: tacheId,
+      properties: { 'A planifier': { checkbox: false } }
+    });
 
     res.json({ success: true, creees });
   } catch (err) {
@@ -181,8 +154,5 @@ app.post('/api/planifier', async (req, res) => {
   }
 });
 
-// ─── Démarrage ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Serveur démarré sur le port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Serveur démarré sur le port ${PORT}`));

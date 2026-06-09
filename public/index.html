@@ -19,9 +19,6 @@
       font-size: 16px;
       font-weight: 600;
       margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
     .section {
@@ -42,7 +39,7 @@
       margin-bottom: 6px;
     }
 
-    select, input[type="date"], input[type="time"], textarea {
+    input[type="date"], input[type="time"], textarea {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid #e8e8e4;
@@ -54,63 +51,138 @@
       transition: border-color 0.15s;
     }
 
-    select:focus, input:focus, textarea:focus {
-      border-color: #2eaadc;
-      background: white;
-    }
+    input:focus, textarea:focus { border-color: #2eaadc; background: white; }
 
-    .row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    .sous-taches-list {
-      margin-top: 8px;
+    /* ── Liste des tâches à planifier ── */
+    .taches-list {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      max-height: 200px;
-      overflow-y: auto;
     }
 
-    .sous-tache-item {
+    .tache-card {
+      border: 2px solid #e8e8e4;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .tache-card.active { border-color: #2eaadc; }
+
+    .tache-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      background: white;
+      user-select: none;
+    }
+
+    .tache-header:hover { background: #f7f6f3; }
+
+    .tache-radio {
+      width: 18px;
+      height: 18px;
+      accent-color: #2eaadc;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .tache-nom {
+      flex: 1;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .tache-etat {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #f0f0ef;
+      color: #787774;
+    }
+
+    .chevron {
+      font-size: 11px;
+      color: #9b9b98;
+      transition: transform 0.2s;
+    }
+
+    .tache-card.active .chevron { transform: rotate(90deg); }
+
+    /* ── Sous-tâches ── */
+    .st-panel {
+      display: none;
+      padding: 8px 12px 12px 12px;
+      background: #fafafa;
+      border-top: 1px solid #e8e8e4;
+    }
+
+    .tache-card.active .st-panel { display: block; }
+
+    .st-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #787774;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+
+    .st-list { display: flex; flex-direction: column; gap: 5px; }
+
+    .st-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 7px 10px;
+      padding: 6px 10px;
       border: 1px solid #e8e8e4;
       border-radius: 6px;
+      background: white;
       cursor: pointer;
-      transition: background 0.1s;
     }
 
-    .sous-tache-item:hover { background: #f7f6f3; }
-    .sous-tache-item.selected { background: #e8f4fd; border-color: #2eaadc; }
+    .st-item:hover { background: #f7f6f3; }
+    .st-item.selected { background: #e8f4fd; border-color: #2eaadc; }
 
-    .sous-tache-item input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
+    .st-item input[type="checkbox"] {
+      width: 15px; height: 15px;
       accent-color: #2eaadc;
+      cursor: pointer;
     }
 
-    .badge {
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 10px;
-      font-weight: 500;
-    }
+    .st-nom { flex: 1; font-size: 13px; }
+
+    .badge { font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
     .badge.suivi { background: #e3f0ff; color: #2563eb; }
     .badge.st    { background: #f0fdf4; color: #16a34a; }
 
-    .empty-msg {
-      color: #9b9b98;
-      font-size: 13px;
-      text-align: center;
-      padding: 12px 0;
+    .select-all-btn {
+      font-size: 12px;
+      color: #2eaadc;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-bottom: 6px;
+      display: inline-block;
     }
 
+    .st-empty { font-size: 12px; color: #9b9b98; padding: 4px 0; }
+    .st-loading { font-size: 12px; color: #9b9b98; padding: 4px 0; }
+
+    /* ── Vide ── */
+    .empty-state {
+      text-align: center;
+      padding: 20px;
+      color: #9b9b98;
+      font-size: 13px;
+    }
+
+    .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+
+    /* ── Bouton ── */
     .btn-planifier {
       width: 100%;
       padding: 10px;
@@ -123,6 +195,7 @@
       cursor: pointer;
       transition: background 0.15s;
     }
+
     .btn-planifier:hover { background: #2390c0; }
     .btn-planifier:disabled { background: #b8d8e8; cursor: not-allowed; }
 
@@ -137,24 +210,17 @@
     .toast.success { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; display: block; }
     .toast.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; display: block; }
 
-    .loader {
-      display: none;
-      text-align: center;
-      color: #9b9b98;
-      font-size: 13px;
-      padding: 8px 0;
-    }
-    .loader.active { display: block; }
-
     textarea { resize: vertical; min-height: 60px; }
 
-    .select-all-btn {
+    .refresh-btn {
+      float: right;
       font-size: 12px;
       color: #2eaadc;
       cursor: pointer;
       text-decoration: underline;
-      margin-bottom: 6px;
-      display: inline-block;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: 0;
     }
   </style>
 </head>
@@ -162,20 +228,15 @@
 
 <h2>📅 Planifier un créneau</h2>
 
-<!-- Tâche principale -->
+<!-- Tâches à planifier -->
 <div class="section">
-  <label>Tâche principale</label>
-  <select id="select-tache">
-    <option value="">Chargement...</option>
-  </select>
-</div>
-
-<!-- Sous-tâches -->
-<div class="section" id="section-st" style="display:none">
-  <label>Sous-tâches à inclure</label>
-  <span class="select-all-btn" id="btn-all">Tout sélectionner</span>
-  <div class="loader" id="loader-st">Chargement des sous-tâches...</div>
-  <div class="sous-taches-list" id="list-st"></div>
+  <label>
+    Tâches à planifier
+    <span class="refresh-btn" id="btn-refresh">↻ Actualiser</span>
+  </label>
+  <div class="taches-list" id="taches-list">
+    <div class="st-loading">Chargement...</div>
+  </div>
 </div>
 
 <!-- Créneau -->
@@ -202,101 +263,131 @@
   <textarea id="input-notes" placeholder="Ce que tu vas faire ce créneau..."></textarea>
 </div>
 
-<!-- Bouton -->
 <button class="btn-planifier" id="btn-planifier">Planifier →</button>
 <div class="toast" id="toast"></div>
 
 <script>
-  const BASE_URL = '';  // Vide = même domaine (Render)
-
   let taches = [];
-  let sousTaches = [];
+  let selectedTacheId = null;
+  let sousTachesMap = {};   // { tacheId: [{id, nom, source}] }
   let selectedST = new Set();
 
-  // ─── Init date du jour ────────────────────────────────────────────────────
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('input-date').value = today;
+  document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
 
-  // ─── Charge les tâches ────────────────────────────────────────────────────
+  // ── Charge les tâches cochées ────────────────────────────────────────────────
   async function chargerTaches() {
-    const sel = document.getElementById('select-tache');
-    try {
-      const res = await fetch(`${BASE_URL}/api/taches`);
-      taches = await res.json();
-
-      sel.innerHTML = '<option value="">— Choisir une tâche —</option>';
-      taches.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.id;
-        opt.textContent = t.nom + (t.etat ? ` [${t.etat}]` : '');
-        sel.appendChild(opt);
-      });
-    } catch (e) {
-      sel.innerHTML = '<option value="">Erreur de chargement</option>';
-    }
-  }
-
-  // ─── Charge les sous-tâches quand on sélectionne une tâche ───────────────
-  document.getElementById('select-tache').addEventListener('change', async (e) => {
-    const id = e.target.value;
-    const sectionST = document.getElementById('section-st');
-    const loaderST  = document.getElementById('loader-st');
-    const listST    = document.getElementById('list-st');
-
+    const list = document.getElementById('taches-list');
+    list.innerHTML = '<div class="st-loading">Chargement...</div>';
+    selectedTacheId = null;
     selectedST.clear();
 
-    if (!id) { sectionST.style.display = 'none'; return; }
-
-    sectionST.style.display = 'block';
-    loaderST.classList.add('active');
-    listST.innerHTML = '';
-
     try {
-      const res = await fetch(`${BASE_URL}/api/taches/${id}/sous-taches`);
-      sousTaches = await res.json();
-      loaderST.classList.remove('active');
+      const res = await fetch('/api/taches-a-planifier');
+      taches = await res.json();
 
-      if (sousTaches.length === 0) {
-        listST.innerHTML = '<p class="empty-msg">Aucune sous-tâche trouvée</p>';
+      if (!taches.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">☑️</div>
+            Aucune tâche cochée "À planifier"<br>
+            <small>Coche des tâches dans Suivi des tâches</small>
+          </div>`;
         return;
       }
 
-      sousTaches.forEach(st => {
-        const item = document.createElement('div');
-        item.className = 'sous-tache-item';
-        item.dataset.id = st.id;
+      list.innerHTML = '';
+      taches.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'tache-card';
+        card.dataset.id = t.id;
+        card.innerHTML = `
+          <div class="tache-header">
+            <input type="radio" name="tache" class="tache-radio" value="${t.id}" />
+            <span class="tache-nom">${t.nom}</span>
+            ${t.etat ? `<span class="tache-etat">${t.etat}</span>` : ''}
+            <span class="chevron">▶</span>
+          </div>
+          <div class="st-panel">
+            <div class="st-label">
+              Sous-tâches
+              <span class="select-all-btn" data-id="${t.id}">Tout sélectionner</span>
+            </div>
+            <div class="st-list" id="st-list-${t.id}">
+              <div class="st-loading">Chargement...</div>
+            </div>
+          </div>`;
 
-        const badgeClass = st.source === 'suivi' ? 'suivi' : 'st';
-        const badgeLabel = st.source === 'suivi' ? 'suivi' : 'sous-tâche';
-
-        item.innerHTML = `
-          <input type="checkbox" id="st-${st.id}" />
-          <label for="st-${st.id}" style="font-weight:normal;font-size:13px;text-transform:none;letter-spacing:0;color:#37352f;cursor:pointer;flex:1;margin:0">${st.nom}</label>
-          <span class="badge ${badgeClass}">${badgeLabel}</span>
-        `;
-
-        item.querySelector('input').addEventListener('change', (ev) => {
-          if (ev.target.checked) {
-            selectedST.add(st.id);
-            item.classList.add('selected');
-          } else {
-            selectedST.delete(st.id);
-            item.classList.remove('selected');
-          }
+        // Clic sur le header → sélection radio + ouvre panel + charge ST
+        card.querySelector('.tache-header').addEventListener('click', () => {
+          const radio = card.querySelector('.tache-radio');
+          radio.checked = true;
+          selectTache(t.id, card);
         });
 
-        listST.appendChild(item);
+        card.querySelector('.tache-radio').addEventListener('change', () => {
+          selectTache(t.id, card);
+        });
+
+        list.appendChild(card);
       });
 
     } catch (e) {
-      loaderST.classList.remove('active');
-      listST.innerHTML = '<p class="empty-msg">Erreur de chargement</p>';
+      list.innerHTML = `<div class="empty-state">❌ Erreur : ${e.message}</div>`;
     }
-  });
+  }
 
-  // ─── Tout sélectionner ───────────────────────────────────────────────────
-  document.getElementById('btn-all').addEventListener('click', () => {
-    const checkboxes = document.querySelectorAll('#list-st input[type="checkbox"]');
+  function selectTache(id, card) {
+    // Ferme toutes les autres
+    document.querySelectorAll('.tache-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    selectedTacheId = id;
+    selectedST.clear();
+
+    // Charge les sous-tâches si pas encore fait
+    if (!sousTachesMap[id]) chargerSousTaches(id);
+  }
+
+  // ── Charge sous-tâches ───────────────────────────────────────────────────────
+  async function chargerSousTaches(tacheId) {
+    const listEl = document.getElementById(`st-list-${tacheId}`);
+    try {
+      const res = await fetch(`/api/taches/${tacheId}/sous-taches`);
+      const sts = await res.json();
+      sousTachesMap[tacheId] = sts;
+
+      if (!sts.length) {
+        listEl.innerHTML = '<div class="st-empty">Aucune sous-tâche</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      sts.forEach(st => {
+        const item = document.createElement('div');
+        item.className = 'st-item';
+        const badgeClass = st.source === 'suivi' ? 'suivi' : 'st';
+        item.innerHTML = `
+          <input type="checkbox" id="cb-${st.id}" />
+          <label for="cb-${st.id}" class="st-nom" style="cursor:pointer;margin:0;font-weight:normal;text-transform:none;letter-spacing:0;color:#37352f">${st.nom}</label>
+          <span class="badge ${badgeClass}">${st.source === 'suivi' ? 'suivi' : 'sous-tâche'}</span>`;
+
+        item.querySelector('input').addEventListener('change', ev => {
+          if (ev.target.checked) { selectedST.add(st.id); item.classList.add('selected'); }
+          else                   { selectedST.delete(st.id); item.classList.remove('selected'); }
+        });
+
+        listEl.appendChild(item);
+      });
+
+    } catch(e) {
+      listEl.innerHTML = `<div class="st-empty">Erreur chargement</div>`;
+    }
+  }
+
+  // ── Tout sélectionner ────────────────────────────────────────────────────────
+  document.getElementById('taches-list').addEventListener('click', e => {
+    if (!e.target.classList.contains('select-all-btn')) return;
+    const tacheId = e.target.dataset.id;
+    const checkboxes = document.querySelectorAll(`#st-list-${tacheId} input[type="checkbox"]`);
     const allChecked = [...checkboxes].every(c => c.checked);
     checkboxes.forEach(cb => {
       cb.checked = !allChecked;
@@ -304,60 +395,58 @@
     });
   });
 
-  // ─── Planifier ───────────────────────────────────────────────────────────
+  // ── Actualiser ───────────────────────────────────────────────────────────────
+  document.getElementById('btn-refresh').addEventListener('click', () => {
+    sousTachesMap = {};
+    chargerTaches();
+  });
+
+  // ── Planifier ────────────────────────────────────────────────────────────────
   document.getElementById('btn-planifier').addEventListener('click', async () => {
-    const tacheId   = document.getElementById('select-tache').value;
-    const date      = document.getElementById('input-date').value;
+    const date       = document.getElementById('input-date').value;
     const heureDebut = document.getElementById('input-debut').value;
-    const heureFin  = document.getElementById('input-fin').value;
-    const notes     = document.getElementById('input-notes').value;
-    const toast     = document.getElementById('toast');
-    const btn       = document.getElementById('btn-planifier');
+    const heureFin   = document.getElementById('input-fin').value;
+    const notes      = document.getElementById('input-notes').value;
+    const toast      = document.getElementById('toast');
+    const btn        = document.getElementById('btn-planifier');
 
     toast.className = 'toast';
-    toast.textContent = '';
 
-    if (!tacheId || !date || !heureDebut || !heureFin) {
+    if (!selectedTacheId) {
       toast.className = 'toast error';
-      toast.textContent = '⚠️ Remplis tous les champs obligatoires.';
+      toast.textContent = '⚠️ Sélectionne une tâche.';
+      return;
+    }
+    if (!date || !heureDebut || !heureFin) {
+      toast.className = 'toast error';
+      toast.textContent = '⚠️ Remplis la date et les heures.';
       return;
     }
 
-    const stSelectionnees = sousTaches.filter(st => selectedST.has(st.id));
+    const stSel = (sousTachesMap[selectedTacheId] || []).filter(st => selectedST.has(st.id));
 
     btn.disabled = true;
     btn.textContent = 'Planification en cours...';
 
     try {
-      const res = await fetch(`${BASE_URL}/api/planifier`, {
+      const res = await fetch('/api/planifier', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tacheId,
-          sousTaches: stSelectionnees,
-          date,
-          heureDebut,
-          heureFin,
-          notes
-        })
+        body: JSON.stringify({ tacheId: selectedTacheId, sousTaches: stSel, date, heureDebut, heureFin, notes })
       });
 
       const data = await res.json();
-
       if (data.success) {
         const nb = data.creees.length;
         toast.className = 'toast success';
         toast.textContent = `✅ ${nb} entrée${nb > 1 ? 's' : ''} créée${nb > 1 ? 's' : ''} dans Planning !`;
-
-        // Reset
-        document.getElementById('select-tache').value = '';
-        document.getElementById('section-st').style.display = 'none';
         document.getElementById('input-notes').value = '';
-        selectedST.clear();
+        sousTachesMap = {};
+        setTimeout(() => chargerTaches(), 800);
       } else {
         throw new Error(data.error || 'Erreur inconnue');
       }
-    } catch (e) {
+    } catch(e) {
       toast.className = 'toast error';
       toast.textContent = `❌ Erreur : ${e.message}`;
     } finally {
@@ -366,7 +455,6 @@
     }
   });
 
-  // ─── Démarrage ───────────────────────────────────────────────────────────
   chargerTaches();
 </script>
 </body>
