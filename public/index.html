@@ -4,254 +4,474 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f7f6f3;
-      color: #37352f;
-      padding: 16px;
+    :root {
+      --bg:        #191919;
+      --surface:   #212121;
+      --surface-2: #2f2f2f;
+      --surface-3: #3a3a3a;
+      --border:    #373737;
+      --border-2:  #444444;
+      --text:      #e6e6e5;
+      --text-2:    #9b9b98;
+      --text-3:    #5c5c5a;
+      --accent:    #2eaadc;
+      --accent-dim:#1a3d52;
+      --success:   #4d9e75;
+      --success-dim:#1a3328;
+      --danger:    #e05252;
+      --danger-dim:#3d1a1a;
+      --radius:    6px;
+      --radius-lg: 10px;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 32px;
     }
 
-    h2 {
-      font-size: 16px;
+    /* ── Header ────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
       font-weight: 600;
-      margin-bottom: 14px;
+      color: var(--text);
     }
 
-    .section {
-      background: white;
-      border: 1px solid #e8e8e4;
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
+    .header-title .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
     }
 
-    label {
-      display: block;
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
       font-size: 12px;
+      color: var(--text-2);
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: transparent;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .refresh-btn:hover {
+      color: var(--text);
+      border-color: var(--border-2);
+      background: var(--surface-2);
+    }
+
+    .refresh-btn svg { transition: transform 0.4s; }
+    .refresh-btn.spinning svg { transform: rotate(360deg); }
+
+    /* ── Section ───────────────────────────────────────────────────── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .section-label {
+      font-size: 11px;
       font-weight: 600;
-      color: #787774;
+      color: var(--text-3);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 6px;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
     }
 
-    input[type="date"], input[type="time"], textarea {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #e8e8e4;
-      border-radius: 6px;
-      font-size: 14px;
-      background: #fafafa;
-      color: #37352f;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    input:focus, textarea:focus { border-color: #2eaadc; background: white; }
-
-    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    /* ── Liste des tâches à planifier ── */
+    /* ── Tâches list ───────────────────────────────────────────────── */
     .taches-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
 
+    .empty-state {
+      text-align: center;
+      padding: 24px 16px;
+      color: var(--text-3);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .empty-state .emoji { font-size: 22px; display: block; margin-bottom: 6px; }
+
+    .loading-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-3);
+      font-size: 13px;
+      padding: 8px 2px;
+    }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border-2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Tâche card ────────────────────────────────────────────────── */
     .tache-card {
-      border: 2px solid #e8e8e4;
-      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       overflow: hidden;
       transition: border-color 0.15s;
     }
 
-    .tache-card.active { border-color: #2eaadc; }
+    .tache-card.active {
+      border-color: var(--accent);
+    }
 
     .tache-header {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 12px;
+      padding: 9px 12px;
       cursor: pointer;
-      background: white;
+      background: var(--surface-2);
       user-select: none;
+      transition: background 0.1s;
     }
 
-    .tache-header:hover { background: #f7f6f3; }
+    .tache-header:hover { background: var(--surface-3); }
+    .tache-card.active .tache-header { background: var(--accent-dim); }
 
-    .tache-radio {
-      width: 18px;
-      height: 18px;
-      accent-color: #2eaadc;
-      cursor: pointer;
+    .radio-custom {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border-2);
       flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
     }
+
+    .tache-card.active .radio-custom {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .radio-custom::after {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .tache-card.active .radio-custom::after { opacity: 1; }
 
     .tache-nom {
       flex: 1;
+      font-size: 13.5px;
       font-weight: 500;
-      font-size: 14px;
+      color: var(--text);
     }
 
-    .tache-etat {
+    .status-badge {
       font-size: 11px;
       padding: 2px 8px;
-      border-radius: 10px;
-      background: #f0f0ef;
-      color: #787774;
+      border-radius: 20px;
+      font-weight: 500;
+      background: var(--surface-3);
+      color: var(--text-2);
+      white-space: nowrap;
     }
 
     .chevron {
-      font-size: 11px;
-      color: #9b9b98;
+      color: var(--text-3);
       transition: transform 0.2s;
+      flex-shrink: 0;
     }
 
     .tache-card.active .chevron { transform: rotate(90deg); }
 
-    /* ── Sous-tâches ── */
+    /* ── Sous-tâches panel ─────────────────────────────────────────── */
     .st-panel {
-      display: none;
-      padding: 8px 12px 12px 12px;
-      background: #fafafa;
-      border-top: 1px solid #e8e8e4;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+      background: var(--surface);
+      border-top: 0px solid var(--border);
     }
 
-    .tache-card.active .st-panel { display: block; }
+    .tache-card.active .st-panel {
+      max-height: 400px;
+      border-top-width: 1px;
+    }
 
-    .st-label {
+    .st-inner {
+      padding: 10px 12px 12px;
+    }
+
+    .st-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .st-toolbar-label {
       font-size: 11px;
       font-weight: 600;
-      color: #787774;
+      color: var(--text-3);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 6px;
+      letter-spacing: 0.06em;
     }
 
-    .st-list { display: flex; flex-direction: column; gap: 5px; }
+    .select-all-btn {
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      padding: 0;
+      transition: opacity 0.15s;
+    }
+
+    .select-all-btn:hover { opacity: 0.7; }
+
+    .st-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
     .st-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      border: 1px solid #e8e8e4;
-      border-radius: 6px;
-      background: white;
+      gap: 9px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface-2);
       cursor: pointer;
+      transition: all 0.1s;
     }
 
-    .st-item:hover { background: #f7f6f3; }
-    .st-item.selected { background: #e8f4fd; border-color: #2eaadc; }
+    .st-item:hover { border-color: var(--border-2); background: var(--surface-3); }
+    .st-item.selected { border-color: var(--accent); background: var(--accent-dim); }
 
-    .st-item input[type="checkbox"] {
+    .checkbox-custom {
       width: 15px; height: 15px;
-      accent-color: #2eaadc;
-      cursor: pointer;
+      border-radius: 3px;
+      border: 2px solid var(--border-2);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
     }
 
-    .st-nom { flex: 1; font-size: 13px; }
-
-    .badge { font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
-    .badge.suivi { background: #e3f0ff; color: #2563eb; }
-    .badge.st    { background: #f0fdf4; color: #16a34a; }
-
-    .select-all-btn {
-      font-size: 12px;
-      color: #2eaadc;
-      cursor: pointer;
-      text-decoration: underline;
-      margin-bottom: 6px;
-      display: inline-block;
+    .st-item.selected .checkbox-custom {
+      border-color: var(--accent);
+      background: var(--accent);
     }
 
-    .st-empty { font-size: 12px; color: #9b9b98; padding: 4px 0; }
-    .st-loading { font-size: 12px; color: #9b9b98; padding: 4px 0; }
+    .checkbox-custom svg { opacity: 0; transition: opacity 0.1s; }
+    .st-item.selected .checkbox-custom svg { opacity: 1; }
 
-    /* ── Vide ── */
-    .empty-state {
-      text-align: center;
-      padding: 20px;
-      color: #9b9b98;
+    .st-nom {
+      flex: 1;
       font-size: 13px;
+      color: var(--text);
     }
 
-    .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+    .source-tag {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
 
-    /* ── Bouton ── */
-    .btn-planifier {
-      width: 100%;
-      padding: 10px;
-      background: #2eaadc;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
+    .source-tag.suivi { background: #1a3052; color: #6aabf0; }
+    .source-tag.st    { background: #1a3228; color: #5db887; }
+
+    .st-empty {
+      font-size: 12px;
+      color: var(--text-3);
+      padding: 4px 2px;
+      font-style: italic;
+    }
+
+    /* ── Créneau ───────────────────────────────────────────────────── */
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field-label {
+      font-size: 11px;
       font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 5px;
     }
 
-    .btn-planifier:hover { background: #2390c0; }
-    .btn-planifier:disabled { background: #b8d8e8; cursor: not-allowed; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+    input[type="date"],
+    input[type="time"],
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-appearance: none;
+      color-scheme: dark;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+      background: var(--surface-3);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 64px;
+      line-height: 1.5;
+    }
+
+    /* ── Bouton planifier ──────────────────────────────────────────── */
+    .btn-wrap {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .btn-planifier {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid #1f5070;
+      border-radius: 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+
+    .btn-planifier:hover:not(:disabled) {
+      background: #1f4f6a;
+      border-color: var(--accent);
+    }
+
+    .btn-planifier:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-spinner {
+      width: 12px; height: 12px;
+      border: 1.5px solid rgba(46,170,220,0.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .btn-planifier.loading .btn-spinner { display: block; }
+    .btn-planifier.loading .btn-text { opacity: 0.7; }
+
+    /* ── Toast ─────────────────────────────────────────────────────── */
     .toast {
       display: none;
       margin-top: 10px;
       padding: 10px 14px;
-      border-radius: 8px;
+      border-radius: var(--radius);
       font-size: 13px;
       font-weight: 500;
+      align-items: center;
+      gap: 8px;
     }
-    .toast.success { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; display: block; }
-    .toast.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; display: block; }
 
-    textarea { resize: vertical; min-height: 60px; }
+    .toast.visible { display: flex; }
+    .toast.success { background: var(--success-dim); border: 1px solid #2d6b4e; color: #7ecfa3; }
+    .toast.error   { background: var(--danger-dim);  border: 1px solid #6b2d2d; color: #f09090; }
 
-    .refresh-btn {
-      float: right;
-      font-size: 12px;
-      color: #2eaadc;
-      cursor: pointer;
-      text-decoration: underline;
-      font-weight: normal;
-      text-transform: none;
-      letter-spacing: 0;
+    /* ── Divider ───────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0 10px;
     }
   </style>
 </head>
 <body>
 
-<h2>📅 Planifier un créneau</h2>
+<div class="header">
+  <div class="header-title">
+    <div class="dot"></div>
+    Planifier un créneau
+  </div>
+  <button class="refresh-btn" id="btn-refresh">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M10.5 6A4.5 4.5 0 1 1 6 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M6 1.5L8 3.5M6 1.5L8-.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+    Actualiser
+  </button>
+</div>
 
-<!-- Tâches à planifier -->
+<!-- Tâches -->
 <div class="section">
-  <label>
-    Tâches à planifier
-    <span class="refresh-btn" id="btn-refresh">↻ Actualiser</span>
-  </label>
+  <div class="section-label">Tâches à planifier</div>
   <div class="taches-list" id="taches-list">
-    <div class="st-loading">Chargement...</div>
+    <div class="loading-row"><div class="spinner"></div> Chargement…</div>
   </div>
 </div>
 
 <!-- Créneau -->
 <div class="section">
-  <label>Créneau</label>
-  <div style="margin-bottom:8px">
+  <div class="section-label">Créneau</div>
+  <div class="field">
+    <div class="field-label">Date</div>
     <input type="date" id="input-date" />
   </div>
   <div class="row-2">
-    <div>
-      <label>Début</label>
+    <div class="field">
+      <div class="field-label">Début</div>
       <input type="time" id="input-debut" value="09:00" />
     </div>
-    <div>
-      <label>Fin</label>
+    <div class="field">
+      <div class="field-label">Fin</div>
       <input type="time" id="input-fin" value="11:00" />
     </div>
   </div>
@@ -259,39 +479,50 @@
 
 <!-- Notes -->
 <div class="section">
-  <label>Notes (optionnel)</label>
-  <textarea id="input-notes" placeholder="Ce que tu vas faire ce créneau..."></textarea>
+  <div class="section-label">Notes <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">— optionnel</span></div>
+  <textarea id="input-notes" placeholder="Ce que tu prévois de faire…"></textarea>
 </div>
 
-<button class="btn-planifier" id="btn-planifier">Planifier →</button>
-<div class="toast" id="toast"></div>
+<div class="btn-wrap">
+  <button class="btn-planifier" id="btn-planifier">
+    <div class="btn-spinner"></div>
+    <span class="btn-text">Planifier →</span>
+  </button>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-icon"></span>
+  <span class="toast-msg"></span>
+</div>
 
 <script>
   let taches = [];
   let selectedTacheId = null;
-  let sousTachesMap = {};   // { tacheId: [{id, nom, source}] }
+  let sousTachesMap = {};
   let selectedST = new Set();
 
   document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
 
-  // ── Charge les tâches cochées ────────────────────────────────────────────────
+  // ── Charge les tâches ────────────────────────────────────────────
   async function chargerTaches() {
     const list = document.getElementById('taches-list');
-    list.innerHTML = '<div class="st-loading">Chargement...</div>';
+    const btn  = document.getElementById('btn-refresh');
+    list.innerHTML = '<div class="loading-row"><div class="spinner"></div> Chargement…</div>';
+    btn.classList.add('spinning');
     selectedTacheId = null;
     selectedST.clear();
 
     try {
       const res = await fetch('/api/taches-a-planifier');
       taches = await res.json();
+      btn.classList.remove('spinning');
 
       if (!taches.length) {
-        list.innerHTML = `
-          <div class="empty-state">
-            <div class="icon">☑️</div>
-            Aucune tâche cochée "À planifier"<br>
-            <small>Coche des tâches dans Suivi des tâches</small>
-          </div>`;
+        list.innerHTML = `<div class="empty-state">
+          <span class="emoji">☑️</span>
+          Aucune tâche marquée "À planifier"<br>
+          <span style="color:var(--text-3);font-size:12px">Coche des tâches dans Suivi des tâches</span>
+        </div>`;
         return;
       }
 
@@ -300,54 +531,49 @@
         const card = document.createElement('div');
         card.className = 'tache-card';
         card.dataset.id = t.id;
+
         card.innerHTML = `
           <div class="tache-header">
-            <input type="radio" name="tache" class="tache-radio" value="${t.id}" />
+            <div class="radio-custom"></div>
             <span class="tache-nom">${t.nom}</span>
-            ${t.etat ? `<span class="tache-etat">${t.etat}</span>` : ''}
-            <span class="chevron">▶</span>
+            ${t.etat ? `<span class="status-badge">${t.etat}</span>` : ''}
+            <svg class="chevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
           <div class="st-panel">
-            <div class="st-label">
-              Sous-tâches
-              <span class="select-all-btn" data-id="${t.id}">Tout sélectionner</span>
-            </div>
-            <div class="st-list" id="st-list-${t.id}">
-              <div class="st-loading">Chargement...</div>
+            <div class="st-inner">
+              <div class="st-toolbar">
+                <span class="st-toolbar-label">Sous-tâches</span>
+                <button class="select-all-btn" data-id="${t.id}">Tout sélectionner</button>
+              </div>
+              <div class="st-list" id="st-list-${t.id}">
+                <div class="loading-row"><div class="spinner"></div> Chargement…</div>
+              </div>
             </div>
           </div>`;
 
-        // Clic sur le header → sélection radio + ouvre panel + charge ST
-        card.querySelector('.tache-header').addEventListener('click', () => {
-          const radio = card.querySelector('.tache-radio');
-          radio.checked = true;
-          selectTache(t.id, card);
-        });
-
-        card.querySelector('.tache-radio').addEventListener('change', () => {
-          selectTache(t.id, card);
-        });
-
+        card.querySelector('.tache-header').addEventListener('click', () => selectTache(t.id, card));
         list.appendChild(card);
       });
 
-    } catch (e) {
-      list.innerHTML = `<div class="empty-state">❌ Erreur : ${e.message}</div>`;
+    } catch(e) {
+      btn.classList.remove('spinning');
+      list.innerHTML = `<div class="empty-state"><span class="emoji">⚠️</span>Erreur : ${e.message}</div>`;
     }
   }
 
   function selectTache(id, card) {
-    // Ferme toutes les autres
     document.querySelectorAll('.tache-card').forEach(c => c.classList.remove('active'));
     card.classList.add('active');
     selectedTacheId = id;
     selectedST.clear();
-
-    // Charge les sous-tâches si pas encore fait
+    // reset checkboxes visuels des autres panels
+    document.querySelectorAll('.st-item').forEach(i => i.classList.remove('selected'));
     if (!sousTachesMap[id]) chargerSousTaches(id);
   }
 
-  // ── Charge sous-tâches ───────────────────────────────────────────────────────
+  // ── Charge sous-tâches ──────────────────────────────────────────
   async function chargerSousTaches(tacheId) {
     const listEl = document.getElementById(`st-list-${tacheId}`);
     try {
@@ -364,69 +590,88 @@
       sts.forEach(st => {
         const item = document.createElement('div');
         item.className = 'st-item';
-        const badgeClass = st.source === 'suivi' ? 'suivi' : 'st';
-        item.innerHTML = `
-          <input type="checkbox" id="cb-${st.id}" />
-          <label for="cb-${st.id}" class="st-nom" style="cursor:pointer;margin:0;font-weight:normal;text-transform:none;letter-spacing:0;color:#37352f">${st.nom}</label>
-          <span class="badge ${badgeClass}">${st.source === 'suivi' ? 'suivi' : 'sous-tâche'}</span>`;
+        const tagClass = st.source === 'suivi' ? 'suivi' : 'st';
+        const tagLabel = st.source === 'suivi' ? 'suivi' : 'sous-tâche';
 
-        item.querySelector('input').addEventListener('change', ev => {
-          if (ev.target.checked) { selectedST.add(st.id); item.classList.add('selected'); }
-          else                   { selectedST.delete(st.id); item.classList.remove('selected'); }
+        item.innerHTML = `
+          <div class="checkbox-custom">
+            <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+              <path d="M1 3.5L3.5 6L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="st-nom">${st.nom}</span>
+          <span class="source-tag ${tagClass}">${tagLabel}</span>`;
+
+        item.addEventListener('click', () => {
+          if (selectedST.has(st.id)) {
+            selectedST.delete(st.id);
+            item.classList.remove('selected');
+          } else {
+            selectedST.add(st.id);
+            item.classList.add('selected');
+          }
         });
 
         listEl.appendChild(item);
       });
 
     } catch(e) {
-      listEl.innerHTML = `<div class="st-empty">Erreur chargement</div>`;
+      listEl.innerHTML = '<div class="st-empty">Erreur de chargement</div>';
     }
   }
 
-  // ── Tout sélectionner ────────────────────────────────────────────────────────
+  // ── Tout sélectionner ───────────────────────────────────────────
   document.getElementById('taches-list').addEventListener('click', e => {
-    if (!e.target.classList.contains('select-all-btn')) return;
-    const tacheId = e.target.dataset.id;
-    const checkboxes = document.querySelectorAll(`#st-list-${tacheId} input[type="checkbox"]`);
-    const allChecked = [...checkboxes].every(c => c.checked);
-    checkboxes.forEach(cb => {
-      cb.checked = !allChecked;
-      cb.dispatchEvent(new Event('change'));
+    const btn = e.target.closest('.select-all-btn');
+    if (!btn) return;
+    const tacheId = btn.dataset.id;
+    const items = document.querySelectorAll(`#st-list-${tacheId} .st-item`);
+    const sts = sousTachesMap[tacheId] || [];
+    const allSel = sts.every(st => selectedST.has(st.id));
+
+    sts.forEach((st, i) => {
+      if (allSel) {
+        selectedST.delete(st.id);
+        items[i]?.classList.remove('selected');
+      } else {
+        selectedST.add(st.id);
+        items[i]?.classList.add('selected');
+      }
     });
+
+    btn.textContent = allSel ? 'Tout sélectionner' : 'Tout désélectionner';
   });
 
-  // ── Actualiser ───────────────────────────────────────────────────────────────
+  // ── Actualiser ──────────────────────────────────────────────────
   document.getElementById('btn-refresh').addEventListener('click', () => {
     sousTachesMap = {};
     chargerTaches();
   });
 
-  // ── Planifier ────────────────────────────────────────────────────────────────
+  // ── Toast ───────────────────────────────────────────────────────
+  function showToast(type, msg) {
+    const t = document.getElementById('toast');
+    t.className = `toast visible ${type}`;
+    t.querySelector('.toast-icon').textContent = type === 'success' ? '✓' : '✕';
+    t.querySelector('.toast-msg').textContent = msg;
+    setTimeout(() => t.className = 'toast', 4000);
+  }
+
+  // ── Planifier ───────────────────────────────────────────────────
   document.getElementById('btn-planifier').addEventListener('click', async () => {
-    const date       = document.getElementById('input-date').value;
-    const heureDebut = document.getElementById('input-debut').value;
-    const heureFin   = document.getElementById('input-fin').value;
-    const notes      = document.getElementById('input-notes').value;
-    const toast      = document.getElementById('toast');
-    const btn        = document.getElementById('btn-planifier');
+    const date        = document.getElementById('input-date').value;
+    const heureDebut  = document.getElementById('input-debut').value;
+    const heureFin    = document.getElementById('input-fin').value;
+    const notes       = document.getElementById('input-notes').value;
+    const btn         = document.getElementById('btn-planifier');
 
-    toast.className = 'toast';
-
-    if (!selectedTacheId) {
-      toast.className = 'toast error';
-      toast.textContent = '⚠️ Sélectionne une tâche.';
-      return;
-    }
-    if (!date || !heureDebut || !heureFin) {
-      toast.className = 'toast error';
-      toast.textContent = '⚠️ Remplis la date et les heures.';
-      return;
-    }
+    if (!selectedTacheId) { showToast('error', 'Sélectionne une tâche.'); return; }
+    if (!date || !heureDebut || !heureFin) { showToast('error', 'Remplis la date et les heures.'); return; }
 
     const stSel = (sousTachesMap[selectedTacheId] || []).filter(st => selectedST.has(st.id));
 
+    btn.classList.add('loading');
     btn.disabled = true;
-    btn.textContent = 'Planification en cours...';
 
     try {
       const res = await fetch('/api/planifier', {
@@ -438,20 +683,18 @@
       const data = await res.json();
       if (data.success) {
         const nb = data.creees.length;
-        toast.className = 'toast success';
-        toast.textContent = `✅ ${nb} entrée${nb > 1 ? 's' : ''} créée${nb > 1 ? 's' : ''} dans Planning !`;
+        showToast('success', `${nb} entrée${nb > 1 ? 's' : ''} créée${nb > 1 ? 's' : ''} dans Planning`);
         document.getElementById('input-notes').value = '';
         sousTachesMap = {};
-        setTimeout(() => chargerTaches(), 800);
+        setTimeout(chargerTaches, 600);
       } else {
         throw new Error(data.error || 'Erreur inconnue');
       }
     } catch(e) {
-      toast.className = 'toast error';
-      toast.textContent = `❌ Erreur : ${e.message}`;
+      showToast('error', e.message);
     } finally {
+      btn.classList.remove('loading');
       btn.disabled = false;
-      btn.textContent = 'Planifier →';
     }
   });
 
