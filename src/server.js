@@ -121,11 +121,10 @@ app.post('/api/planifier', async (req, res) => {
       parent: { database_id: PLANNING_DB },
       ...(iconTache ? { icon: iconTache } : {}),
       properties: {
-        'Nom':           { title: [{ text: { content: nomTache } }] },
-        'Tache liee':    { relation: [{ id: tacheId }] },
-        'Creneau debut': { date: { start: debutISO } },
-        'Creneau fin':   { date: { start: finISO } },
-        'Etat':          { select: { name: 'Planifié' } },
+        'Nom':        { title: [{ text: { content: nomTache } }] },
+        'Tache liee': { relation: [{ id: tacheId }] },
+        'Créneau':    { date: { start: debutISO, end: finISO } },
+        'Etat':       { select: { name: 'Planifié' } },
         ...(notes ? { 'Notes': { rich_text: [{ text: { content: notes } }] } } : {})
       }
     });
@@ -136,15 +135,21 @@ app.post('/api/planifier', async (req, res) => {
         ? { 'Tache liee':       { relation: [{ id: st.id }] } }
         : { 'Sous-tache liee':  { relation: [{ id: st.id }] } };
 
+      // Récupère l'icône directement depuis l'API pour garantir la fraîcheur
+      let iconST = null;
+      try {
+        const stPage = await notion.pages.retrieve({ page_id: st.id });
+        iconST = extractIcon(stPage);
+      } catch(_) {}
+
       const stCreee = await notion.pages.create({
         parent: { database_id: PLANNING_DB },
-        ...(st.icon ? { icon: st.icon } : {}),
+        ...(iconST ? { icon: iconST } : {}),
         properties: {
           'Nom':                   { title: [{ text: { content: st.nom } }] },
           ...propST,
           'Tache parent planning': { relation: [{ id: pageCreee.id }] },
-          'Creneau debut':         { date: { start: debutISO } },
-          'Creneau fin':           { date: { start: finISO } },
+          'Créneau':               { date: { start: debutISO, end: finISO } },
           'Etat':                  { select: { name: 'Planifié' } }
         }
       });
