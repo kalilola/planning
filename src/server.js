@@ -22,7 +22,7 @@ const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const SUIVI_TACHES_DB = '210b8c920bd2801bac30d7c6fc55d802';
 const SOUS_TACHES_DB  = '2acb8c920bd2802bba52c6525a3e251c';
 const FORMATIONS_DB   = '37cb8c920bd28024a757ecbfb3325760';
-const COURS_DB        = '37cb8c920bd2800d8ce1f4e6f43ca36a';
+const COURS_DB        = '37cb8c920bd28021963ae6e183453161';
 const PLANNING_DB     = '37ab8c920bd28083865acb4fe899a3ca';
 
 // ─── Configuration par source ───────────────────────────────────────────────────
@@ -64,7 +64,7 @@ const SOURCES = {
         db: COURS_DB,
         filterProp: 'Formations',
         titleProp: 'Nom',
-        statusProp: null,
+        statusProp: 'État',
         planningRelation: 'Cours liee',
         source: 'cours'
       }
