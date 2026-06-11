@@ -18,35 +18,59 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
+// ─── IDs des bases ─────────────────────────────────────────────────────────────
 const SUIVI_TACHES_DB = '210b8c920bd2801bac30d7c6fc55d802';
 const SOUS_TACHES_DB  = '2acb8c920bd2802bba52c6525a3e251c';
+const FORMATIONS_DB   = '37cb8c920bd28024a757ecbfb3325760';
+const COURS_DB        = '37cb8c920bd2800d8ce1f4e6f43ca36a';
 const PLANNING_DB     = '37ab8c920bd28083865acb4fe899a3ca';
 
-// ─── GET /api/taches-a-planifier ──────────────────────────────────────────────
-// Retourne TOUTES les tâches cochées "A planifier" (sans filtre tâche parent)
-app.get('/api/taches-a-planifier', async (req, res) => {
-  try {
-    const response = await notion.databases.query({
-      database_id: SUIVI_TACHES_DB,
-      filter: {
-        property: 'A planifier',
-        checkbox: { equals: true }
+// ─── Configuration par source ───────────────────────────────────────────────────
+// Décrit comment requêter/écrire selon que la source est "vyrexads" ou "formations"
+const SOURCES = {
+  vyrexads: {
+    label: 'Vyrexads',
+    mainDb: SUIVI_TACHES_DB,
+    mainTitleProp: 'Nom de la tâche',
+    mainStatusProp: 'État',
+    mainPlanningRelation: 'Tache liee',     // propriété dans Planning -> tâche principale
+    sousTaches: [
+      {
+        db: SUIVI_TACHES_DB,
+        filterProp: 'tâche parent',
+        titleProp: 'Nom de la tâche',
+        statusProp: 'État',
+        planningRelation: 'Tache liee',
+        source: 'suivi'
       },
-      sorts: [{ property: 'Nom de la tâche', direction: 'ascending' }]
-    });
-
-    const taches = response.results.map(page => ({
-      id: page.id,
-      nom: page.properties['Nom de la tâche']?.title?.[0]?.plain_text || '(sans nom)',
-      etat: page.properties['État']?.status?.name || '',
-    }));
-
-    res.json(taches);
-  } catch (err) {
-    console.error('Erreur /api/taches-a-planifier:', err.message);
-    res.status(500).json({ error: err.message });
+      {
+        db: SOUS_TACHES_DB,
+        filterProp: 'sous tache parent',
+        titleProp: 'Nom',
+        statusProp: 'État',
+        planningRelation: 'Sous-tache liee',
+        source: 'sous_taches'
+      }
+    ]
+  },
+  formations: {
+    label: 'Formations',
+    mainDb: FORMATIONS_DB,
+    mainTitleProp: 'Nom',
+    mainStatusProp: null,
+    mainPlanningRelation: 'Formation liee',
+    sousTaches: [
+      {
+        db: COURS_DB,
+        filterProp: 'Formations',
+        titleProp: 'Nom',
+        statusProp: null,
+        planningRelation: 'Cours liee',
+        source: 'cours'
+      }
+    ]
   }
-});
+};
 
 // ─── Helper : extrait l'icône d'une page Notion ───────────────────────────────
 function extractIcon(page) {
@@ -56,54 +80,91 @@ function extractIcon(page) {
   return null;
 }
 
-// ─── GET /api/taches/:id/sous-taches ──────────────────────────────────────────
-app.get('/api/taches/:id/sous-taches', async (req, res) => {
-  const { id } = req.params;
+function getTitle(page, prop) {
+  return page.properties[prop]?.title?.[0]?.plain_text || '(sans nom)';
+}
+
+function getStatus(page, prop) {
+  if (!prop) return '';
+  return page.properties[prop]?.status?.name || '';
+}
+
+// ─── GET /api/sources ──────────────────────────────────────────────────────────
+// Retourne la liste des sources disponibles
+app.get('/api/sources', (req, res) => {
+  res.json(Object.entries(SOURCES).map(([key, cfg]) => ({ key, label: cfg.label })));
+});
+
+// ─── GET /api/:source/items-a-planifier ────────────────────────────────────────
+app.get('/api/:source/items-a-planifier', async (req, res) => {
+  const cfg = SOURCES[req.params.source];
+  if (!cfg) return res.status(400).json({ error: 'Source inconnue' });
+
   try {
-    const suiviRes = await notion.databases.query({
-      database_id: SUIVI_TACHES_DB,
+    const response = await notion.databases.query({
+      database_id: cfg.mainDb,
       filter: {
-        property: 'tâche parent',
-        relation: { contains: id }
-      }
+        property: 'A planifier',
+        checkbox: { equals: true }
+      },
+      sorts: [{ property: cfg.mainTitleProp, direction: 'ascending' }]
     });
 
-    const sousTachesSuivi = suiviRes.results.map(page => ({
+    const items = response.results.map(page => ({
       id: page.id,
-      nom: page.properties['Nom de la tâche']?.title?.[0]?.plain_text || '(sans nom)',
-      etat: page.properties['État']?.status?.name || '',
-      icon: extractIcon(page),
-      source: 'suivi'
+      nom: getTitle(page, cfg.mainTitleProp),
+      etat: getStatus(page, cfg.mainStatusProp),
     }));
 
-    const stRes = await notion.databases.query({
-      database_id: SOUS_TACHES_DB,
-      filter: {
-        property: 'sous tache parent',
-        relation: { contains: id }
-      }
-    });
-
-    const sousTachesDB = stRes.results.map(page => ({
-      id: page.id,
-      nom: page.properties['Nom']?.title?.[0]?.plain_text || '(sans nom)',
-      etat: page.properties['État']?.status?.name || '',
-      icon: extractIcon(page),
-      source: 'sous_taches'
-    }));
-
-    res.json([...sousTachesSuivi, ...sousTachesDB]);
+    res.json(items);
   } catch (err) {
-    console.error('Erreur sous-taches:', err.message);
+    console.error(`Erreur /api/${req.params.source}/items-a-planifier:`, err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── POST /api/planifier ───────────────────────────────────────────────────────
-app.post('/api/planifier', async (req, res) => {
-  const { tacheId, sousTaches, date, heureDebut, heureFin, notes } = req.body;
+// ─── GET /api/:source/items/:id/sous-elements ──────────────────────────────────
+app.get('/api/:source/items/:id/sous-elements', async (req, res) => {
+  const cfg = SOURCES[req.params.source];
+  if (!cfg) return res.status(400).json({ error: 'Source inconnue' });
 
-  if (!tacheId || !date || !heureDebut || !heureFin) {
+  const { id } = req.params;
+  try {
+    let resultats = [];
+
+    for (const st of cfg.sousTaches) {
+      const r = await notion.databases.query({
+        database_id: st.db,
+        filter: {
+          property: st.filterProp,
+          relation: { contains: id }
+        }
+      });
+
+      resultats = resultats.concat(r.results.map(page => ({
+        id: page.id,
+        nom: getTitle(page, st.titleProp),
+        etat: getStatus(page, st.statusProp),
+        icon: extractIcon(page),
+        source: st.source
+      })));
+    }
+
+    res.json(resultats);
+  } catch (err) {
+    console.error('Erreur sous-elements:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST /api/:source/planifier ───────────────────────────────────────────────
+app.post('/api/:source/planifier', async (req, res) => {
+  const cfg = SOURCES[req.params.source];
+  if (!cfg) return res.status(400).json({ error: 'Source inconnue' });
+
+  const { itemId, sousElements, date, heureDebut, heureFin, notes } = req.body;
+
+  if (!itemId || !date || !heureDebut || !heureFin) {
     return res.status(400).json({ error: 'Champs manquants' });
   }
 
@@ -111,60 +172,61 @@ app.post('/api/planifier', async (req, res) => {
   const finISO   = `${date}T${heureFin}:00.000+02:00`;
 
   try {
-    const tachePage = await notion.pages.retrieve({ page_id: tacheId });
-    const nomTache  = tachePage.properties['Nom de la tâche']?.title?.[0]?.plain_text || 'Tâche';
-    const iconTache = extractIcon(tachePage);
+    const itemPage = await notion.pages.retrieve({ page_id: itemId });
+    const nomItem  = getTitle(itemPage, cfg.mainTitleProp);
+    const iconItem = extractIcon(itemPage);
 
     const creees = [];
 
     const pageCreee = await notion.pages.create({
       parent: { database_id: PLANNING_DB },
-      ...(iconTache ? { icon: iconTache } : {}),
+      ...(iconItem ? { icon: iconItem } : {}),
       properties: {
-        'Nom':        { title: [{ text: { content: nomTache } }] },
-        'Tache liee': { relation: [{ id: tacheId }] },
-        'Créneau':    { date: { start: debutISO, end: finISO } },
-        'Etat':       { select: { name: 'Planifié' } },
+        'Nom':                     { title: [{ text: { content: nomItem } }] },
+        [cfg.mainPlanningRelation]: { relation: [{ id: itemId }] },
+        'Créneau':                 { date: { start: debutISO, end: finISO } },
+        'Etat':                    { select: { name: 'Planifié' } },
+        'Source':                  { select: { name: cfg.label } },
         ...(notes ? { 'Notes': { rich_text: [{ text: { content: notes } }] } } : {})
       }
     });
-    creees.push({ nom: nomTache, id: pageCreee.id });
+    creees.push({ nom: nomItem, id: pageCreee.id });
 
-    for (const st of (sousTaches || [])) {
-      const propST = st.source === 'suivi'
-        ? { 'Tache liee':       { relation: [{ id: st.id }] } }
-        : { 'Sous-tache liee':  { relation: [{ id: st.id }] } };
+    for (const se of (sousElements || [])) {
+      const stCfg = cfg.sousTaches.find(s => s.source === se.source);
+      const propRelation = stCfg ? stCfg.planningRelation : cfg.mainPlanningRelation;
 
       // Récupère l'icône directement depuis l'API pour garantir la fraîcheur
-      let iconST = null;
+      let iconSE = null;
       try {
-        const stPage = await notion.pages.retrieve({ page_id: st.id });
-        iconST = extractIcon(stPage);
+        const sePage = await notion.pages.retrieve({ page_id: se.id });
+        iconSE = extractIcon(sePage);
       } catch(_) {}
 
-      const stCreee = await notion.pages.create({
+      const seCreee = await notion.pages.create({
         parent: { database_id: PLANNING_DB },
-        ...(iconST ? { icon: iconST } : {}),
+        ...(iconSE ? { icon: iconSE } : {}),
         properties: {
-          'Nom':                   { title: [{ text: { content: st.nom } }] },
-          ...propST,
+          'Nom':                   { title: [{ text: { content: se.nom } }] },
+          [propRelation]:          { relation: [{ id: se.id }] },
           'Tache parent planning': { relation: [{ id: pageCreee.id }] },
           'Créneau':               { date: { start: debutISO, end: finISO } },
-          'Etat':                  { select: { name: 'Planifié' } }
+          'Etat':                  { select: { name: 'Planifié' } },
+          'Source':                { select: { name: cfg.label } }
         }
       });
-      creees.push({ nom: st.nom, id: stCreee.id });
+      creees.push({ nom: se.nom, id: seCreee.id });
     }
 
     // Décoche "A planifier"
     await notion.pages.update({
-      page_id: tacheId,
+      page_id: itemId,
       properties: { 'A planifier': { checkbox: false } }
     });
 
     res.json({ success: true, creees });
   } catch (err) {
-    console.error('Erreur /api/planifier:', err.message);
+    console.error(`Erreur /api/${req.params.source}/planifier:`, err.message);
     res.status(500).json({ error: err.message });
   }
 });
